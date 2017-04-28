@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Super Snake</title>
+  <meta charset="UTF-8">
+  <script type="text/javascript" src="gameMap.js"></script>
+  <script type="text/javascript" src="snake.js"></script>
+</head>
+
+<body>
+  <canvas id="gameCanvas" height="900" width="1500"></canvas>
+</body>
+
+</html>
+<script>
+  // Stałe gry - mapa
+  var ROWS = 150;
+  var COLS = 90;
+
+  var EMPTY = 0;
+  var SNAKE = 1;
+  var FOOD = 2;
+
+  var EMPTY_COLOR = '#E0CA3C';
+  var FOOD_COLOR = '#2E5077';
+  var SNAKE_COLOR = '#611C35';
+  var TEXT_COLOR = '#2E5077';
+
+  // Stałe gry - ruch węża
+  var UP = 1;
+  var RIGHT = 2;
+  var DOWN = 3;
+  var LEFT = 4;
+
+  var KEY_LEFT = 37;
+  var KEY_UP = 38;
+  var KEY_RIGHT = 39;
+  var KEY_DOWN = 40;
+  var KEY_SPEED_1 = 49;
+  var KEY_SPEED_2 = 50;
+
+  var canvas = document.getElementById("gameCanvas");
+  var ctx = canvas.getContext('2d');
+  var frame = 0;
+  var score = 0;
+  var speed = 5;
+  var buttonPressed = {}
+
+
+  // Początek gry
+  function main() {
+    console.log("Start gry!");
+
+    keyBindings();
+    firstFrame();
+
+
+    // Uruchomienie animacji
+    loop();
+  }
+
+  function firstFrame() {
+    frame = 0;
+    score = 0;
+    gameMap.init(ROWS, COLS);
+    gameMap.set(29, 29, SNAKE);
+    snake.init(29, 29, UP);
+    generateFood();
+  }
+
+
+  function loop() {
+    update();
+    drawMap();
+    window.requestAnimationFrame(loop, canvas);
+  }
+
+  function update() {
+    frame++;
+    setSnakeDirection();
+
+    if (frame % speed == 0) {
+      var snakeHead_x = snake.head.x;
+      var snakeHead_y = snake.head.y;
+
+      switch (snake.direction) {
+        case UP:
+          snakeHead_y--;
+          break;
+        case RIGHT:
+          snakeHead_x++;
+          break;
+        case DOWN:
+          snakeHead_y++;
+          break;
+        case LEFT:
+          snakeHead_x--;
+          break;
+      }
+
+      // Warunki przegranej
+      if (gameIsLost(snakeHead_x, snakeHead_y)) {
+        console.log("zdech")
+        firstFrame();
+        alert("You've lost!")
+        return;
+      }
+
+      if (gameMap.mapa[snakeHead_x][snakeHead_y] == FOOD) {
+        generateFood();
+        score += 100;
+      } else {
+        var tail = snake.makeSmaller();
+        gameMap.set(tail.x, tail.y, EMPTY);
+      }
+
+      snake.grow(snakeHead_x, snakeHead_y);
+      gameMap.set(snakeHead_x, snakeHead_y, SNAKE);
+    }
+  }
+
+  function setSnakeDirection() {
+    if (buttonPressed[KEY_LEFT] && snake.direction !== RIGHT)
+      snake.direction = LEFT;
+    if (buttonPressed[KEY_UP] && snake.direction !== DOWN)
+      snake.direction = UP;
+    if (buttonPressed[KEY_RIGHT] && snake.direction !== LEFT)
+      snake.direction = RIGHT;
+    if (buttonPressed[KEY_DOWN] && snake.direction !== UP)
+      snake.direction = DOWN;
+    if (buttonPressed[KEY_SPEED_1])
+      speed = 5;
+    if (buttonPressed[KEY_SPEED_2])
+      speed = 1;
+
+  }
+
+  function keyBindings() {
+    document.addEventListener("keydown", function(event) {
+      buttonPressed[event.keyCode] = true;
+    });
+
+    document.addEventListener("keyup", function(event) {
+      delete buttonPressed[event.keyCode];
+    });
+  }
+
+  // Funkcje pomocnicze gry
+  function generateFood() {
+    console.log("Losuję jedzenie!");
+    gameMap.set(
+      Math.floor(Math.random() * ROWS),
+      Math.floor(Math.random() * COLS),
+      FOOD);
+
+  }
+
+  function gameIsLost(head_x, head_y) {
+    return (head_x > ROWS - 1 ||
+      head_y > COLS - 1 ||
+      head_x < 0 ||
+      head_y < 0 ||
+      gameMap.mapa[head_x][head_y] == SNAKE)
+  }
+
+
+
+
+  function drawMap() {
+    console.log("Rysowanie mapy!")
+
+    var x_len = canvas.width / ROWS;
+    var y_len = canvas.height / COLS;
+
+    ctx.beginPath();
+    ctx.lineWidth = 0.0;
+
+
+    for (var x = 0; x < ROWS; x++) {
+      for (var y = 0; y < COLS; y++) {
+
+        var mapElement = gameMap.mapa[x][y];
+        switch (mapElement) {
+          case 0:
+            ctx.fillStyle = EMPTY_COLOR;
+            break;
+          case 1:
+            ctx.fillStyle = SNAKE_COLOR;
+            break;
+          case 2:
+            ctx.fillStyle = FOOD_COLOR;
+            break;
+        }
+
+
+
+        ctx.fillRect(x_len * x, y_len * y, x_len, y_len);
+      }
+    }
+
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.font = "30px Arial";
+    ctx.fillText("SCORE: " + score, 10, 50);
+
+    if (speed == 1) {
+      ctx.fillText("TURBO!", canvas.width - 200, 50);
+    }
+
+    ctx.strokeStyle = 'black';
+    ctx.stroke();
+  }
+
+
+
+  main();
+</script>
